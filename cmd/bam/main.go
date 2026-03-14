@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/jazzathedev/bam/internal/setup"
+	"github.com/jazzathedev/bam/plugins"
 )
 
 func main() {
@@ -14,4 +15,11 @@ func main() {
 	if err := setup.MakeDirs(); err != nil {
 		log.Fatalf("Error making critical dirs: %s", err)
 	}
+
+	pluginConfig, err := plugins.LoadBuiltinPlugins()
+	if err != nil {
+		log.Fatalf("Error reading plugin configs")
+	}
+
+	fmt.Println(pluginConfig[0].Name)
 }

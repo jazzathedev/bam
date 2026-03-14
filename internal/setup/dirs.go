@@ -6,13 +6,20 @@ import (
 	"path/filepath"
 )
 
-func MakeDirs() error {
+func BamDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	bam := filepath.Join(home, ".bam")
+	return filepath.Join(home, ".bam"), nil
+}
+
+func MakeDirs() error {
+	bam, err := BamDir()
+	if err != nil {
+		return fmt.Errorf("Error finding .bam folder: %w", err)
+	}
 
 	if err := os.MkdirAll(bam, 0755); err != nil {
 		return fmt.Errorf("Making .bam: %w", err)
