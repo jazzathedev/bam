@@ -6,7 +6,7 @@ description = "Node.js JavaScript runtime"
 list_url = "https://nodejs.org/dist/index.json"
 list_path = "$[*].version"                                          # JSONPath to extract version list
 strip_prefix = "v"
-channels = { latest = "current", lts = "lts", nightly = "nightly" }
+channels = { latest = "current" }
 
 [download]
 url = "https://nodejs.org/dist/v{version}/node-v{version}-{os}-{arch}.{ext}"

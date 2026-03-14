@@ -22,9 +22,7 @@ type Versions struct {
 }
 
 type Channels struct {
-	Latest  string `toml:"latest"`
-	LTS     string `toml:"lts"`
-	Nightly string `toml:"nightly"`
+	Latest string `toml:"latest"`
 }
 
 type Download struct {

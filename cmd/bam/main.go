@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/jazzathedev/bam/internal/setup"
+	"github.com/jazzathedev/bam/internal/version"
 	"github.com/jazzathedev/bam/plugins"
 )
 
@@ -22,4 +23,10 @@ func main() {
 	}
 
 	fmt.Println(pluginConfig[0].Name)
+
+	result, err := version.ResolvePackageVersion("latest", pluginConfig[0])
+	if err != nil {
+		log.Fatalf("Resolver error: %s", err)
+	}
+	fmt.Println(result)
 }
