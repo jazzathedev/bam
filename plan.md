@@ -75,11 +75,13 @@ bin = ["bin/node", "bin/npm", "bin/npx"]   # which binaries get shims
 The generic shim is a **separate minimal Go program** (its own module), compiled per platform and embedded into the main `bam` binary via `go:embed`.
 
 **At install time** (`bam install node@22.1.0`):
+
 - bam extracts the embedded generic shim binary
 - Copies it to `~/.bam/shims/node.exe`, `~/.bam/shims/npm.exe`, etc.
 - The shim itself is stateless - no version baked in
 
 **At invocation time** (user runs `node`):
+
 1. Shim reads `os.Executable()` -> gets its own name (`node`)
 2. Reads `~/.bam/.priority` for resolution order
 3. Walks up CWD checking for version files in that order
@@ -92,6 +94,7 @@ The generic shim is a **separate minimal Go program** (its own module), compiled
 ## Version Resolution
 
 **Formats accepted:**
+
 - `22.1.0` - exact
 - `22.x` or `22` - latest matching major
 - `latest`, `lts`, `beta`, `nightly` - channel aliases defined per plugin
@@ -134,14 +137,12 @@ JSON record of everything bam has ever touched:
 
 ```json
 {
-  "path_modifications": [
-    { "file": "~/.bashrc", "added": "export PATH=~/.bam/shims:$PATH", "timestamp": "..." }
-  ],
-  "shims_created": ["~/.bam/shims/node.exe"],
-  "dirs_created":  ["~/.bam/installs/node/22.1.0"],
-  "installed_tools": [
-    { "tool": "node", "version": "22.1.0", "installed_at": "..." }
-  ]
+	"path_modifications": [
+		{ "file": "~/.bashrc", "added": "export PATH=~/.bam/shims:$PATH", "timestamp": "..." }
+	],
+	"shims_created": ["~/.bam/shims/node.exe"],
+	"dirs_created": ["~/.bam/installs/node/22.1.0"],
+	"installed_tools": [{ "tool": "node", "version": "22.1.0", "installed_at": "..." }]
 }
 ```
 
@@ -177,12 +178,14 @@ bam setup                        run PATH setup (also runs on first install)
 ## Bootstrap Installer
 
 A **single tiny Go binary** (or shell script fallback) that:
+
 1. Detects OS/arch
 2. Downloads the correct `bam` binary from GitHub releases
 3. Places it in `~/.bam/`
 4. Runs `bam setup` (creates dirs, handles PATH)
 
 `bam setup` asks the user clearly:
+
 > "Add `~/.bam/shims` to PATH in `~/.bashrc`? [Y/n]"
 > Then also prints the manual line regardless.
 
@@ -190,18 +193,18 @@ A **single tiny Go binary** (or shell script fallback) that:
 
 ## Implementation Order
 
-| # | Component | Notes |
-|---|-----------|-------|
-| 1 | Core dirs + config bootstrap | First-run setup, OS/arch detection |
-| 2 | Plugin loader | TOML parsing, builtin + user discovery |
-| 3 | Version resolver | latest/lts/x patterns, fetch+cache version list |
-| 4 | Downloader + cache + hash check | Check cache before download, verify hash |
-| 5 | Extractor | tar.gz, tar.xz, zip, strip_components |
-| 6 | Install manager | Wire 3-5, write to installs/, update versions/ |
-| 7 | Shim binary | Separate Go module, embedded into bam |
-| 8 | Shim generator | Copy+rename shim on install |
-| 9 | PATH manager | Shell detection, profile modification, install.log |
-| 10 | Built-in plugins | node, pnpm, bun, deno, go TOMLs |
-| 11 | Local version resolution | .bam, package.json, .priority, dir walking |
-| 12 | Full CLI | All commands wired up |
-| 13 | Bootstrap installer | Standalone tiny binary |
+| #   | Component                       | Notes                                              |
+| --- | ------------------------------- | -------------------------------------------------- |
+| 1   | Core dirs + config bootstrap    | First-run setup, OS/arch detection                 |
+| 2   | Plugin loader                   | TOML parsing, builtin + user discovery             |
+| 3   | Version resolver                | latest/x patterns, fetch+cache version list        |
+| 4   | Downloader + cache + hash check | Check cache before download, verify hash           |
+| 5   | Extractor                       | tar.gz, tar.xz, zip, strip_components              |
+| 6   | Install manager                 | Wire 3-5, write to installs/, update versions/     |
+| 7   | Shim binary                     | Separate Go module, embedded into bam              |
+| 8   | Shim generator                  | Copy+rename shim on install                        |
+| 9   | PATH manager                    | Shell detection, profile modification, install.log |
+| 10  | Built-in plugins                | node, pnpm, bun, deno, go TOMLs                    |
+| 11  | Local version resolution        | .bam, package.json, .priority, dir walking         |
+| 12  | Full CLI                        | All commands wired up                              |
+| 13  | Bootstrap installer             | Standalone tiny binary                             |
