@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/jazzathedev/bam/internal/download"
 	"github.com/jazzathedev/bam/internal/setup"
 	"github.com/jazzathedev/bam/internal/version"
 	"github.com/jazzathedev/bam/plugins"
@@ -24,9 +25,17 @@ func main() {
 
 	fmt.Println(pluginConfig[0].Name)
 
-	result, err := version.ResolvePackageVersion("latest", pluginConfig[0])
+	resolvedVersion, err := version.ResolvePackageVersion("22.x", pluginConfig[0])
 	if err != nil {
 		log.Fatalf("Resolver error: %s", err)
 	}
-	fmt.Println(result)
+	fmt.Println(resolvedVersion)
+
+	toolURL, _ := download.ConstructURL(pluginConfig[0], resolvedVersion)
+	toolPath, _ := download.DownloadURL(toolURL)
+
+	fmt.Println(toolURL)
+	fmt.Println(toolPath)
+
+	fmt.Println(download.VerifyToolHash(pluginConfig[0], toolPath, resolvedVersion))
 }
