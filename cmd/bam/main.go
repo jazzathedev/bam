@@ -25,7 +25,7 @@ func main() {
 
 	fmt.Println(pluginConfig[0].Name)
 
-	resolvedVersion, err := version.ResolvePackageVersion("22.x", pluginConfig[0])
+	resolvedVersion, err := version.ResolveVersion("22.x", pluginConfig[0])
 	if err != nil {
 		log.Fatalf("Resolver error: %s", err)
 	}

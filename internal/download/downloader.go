@@ -79,23 +79,23 @@ func VerifyToolHash(pluginStruct plugin.PluginConfig, toolBinaryPath, version st
 		return false, fmt.Errorf("Unable to read response body: %w", err)
 	}
 
-	hashStrings := string(hashURLBytes)
-	hashStringsLines := strings.Split(hashStrings, "\n")
+	body := string(hashURLBytes)
+	lines := strings.Split(body, "\n")
 
 	hashMap := make(map[string]string)
 
-	for _, hashLine := range hashStringsLines {
-		hashStringParts := strings.Split(hashLine, "  ")
+	for _, hashLine := range lines {
+		parts := strings.Split(hashLine, "  ")
 
-		if len(hashStringParts) == 1 {
+		if len(parts) == 1 {
 			continue
 		}
 
-		if len(hashStringParts) != 2 {
+		if len(parts) != 2 {
 			return false, fmt.Errorf("Unsupported hash URL contents format")
 		}
 
-		hashMap[hashStringParts[1]] = hashStringParts[0]
+		hashMap[parts[1]] = parts[0]
 	}
 
 	toolBinaryName := path.Base(toolBinaryPath)
@@ -107,16 +107,16 @@ func VerifyToolHash(pluginStruct plugin.PluginConfig, toolBinaryPath, version st
 
 	toolExpectedHash = strings.ToLower(toolExpectedHash)
 
-	toolBinary, err := os.Open(toolBinaryPath)
+	toolFile, err := os.Open(toolBinaryPath)
 	if err != nil {
 		return false, fmt.Errorf("Unable to open tool binary: %w", err)
 	}
 
 	hasher := sha256.New()
 
-	_, err = io.Copy(hasher, toolBinary)
+	_, err = io.Copy(hasher, toolFile)
 	if err != nil {
-		return false, fmt.Errorf("Unable to copy tool binary into hasher")
+		return false, fmt.Errorf("Unable to copy tool binary into hasher: %w", err)
 	}
 
 	toolRealHash := strings.ToLower(hex.EncodeToString(hasher.Sum(nil)))

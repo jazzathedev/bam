@@ -37,7 +37,7 @@ func filter(array []string, filterFunction func(string) bool) []string {
 	return filteredArray
 }
 
-func ResolvePackageVersion(rawVersionString string, pluginStruct plugin.PluginConfig) (string, error) {
+func ResolveVersion(rawVersionString string, pluginStruct plugin.PluginConfig) (string, error) {
 	if !needsExpanding(rawVersionString) {
 		return rawVersionString, nil
 	}
@@ -81,7 +81,7 @@ func ResolvePackageVersion(rawVersionString string, pluginStruct plugin.PluginCo
 	var strippedVersions []string
 
 	for _, versionString := range versionStrings {
-		strippedVersion := strings.ReplaceAll(versionString, "v", "")
+		strippedVersion := strings.TrimPrefix(versionString, "v")
 		strippedVersions = append(strippedVersions, strippedVersion)
 	}
 

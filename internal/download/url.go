@@ -26,7 +26,7 @@ func ConstructURL(pluginStruct plugin.PluginConfig, version string) (string, err
 
 	mappedArch, ok := archMapping[userArch]
 	if !ok {
-		return "", fmt.Errorf("User ARCH %s not supported.", userOS)
+		return "", fmt.Errorf("User ARCH %s not supported.", userArch)
 	}
 
 	mappedExt, ok := extMapping[userOS]
