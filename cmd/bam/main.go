@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/jazzathedev/bam/internal/download"
 	"github.com/jazzathedev/bam/internal/setup"
@@ -31,11 +32,23 @@ func main() {
 	}
 	fmt.Println(resolvedVersion)
 
-	toolURL, _ := download.ConstructURL(pluginConfig[0], resolvedVersion)
-	toolPath, _ := download.DownloadURL(toolURL)
+	toolURL, err := download.ConstructURL(pluginConfig[0], resolvedVersion)
+	if err != nil {
+		log.Fatalf("Error constructing plugin download URL %s", err)
+	}
+	fmt.Printf("toolURL: %s\n", toolURL)
 
-	fmt.Println(toolURL)
-	fmt.Println(toolPath)
+	toolDest := "C:\\Users\\jazza\\.bam\\cache\\node-v22.22.1-win-x64.zip"
 
-	fmt.Println(download.VerifyToolHash(pluginConfig[0], toolPath, resolvedVersion))
+	toolPath, err := download.DownloadURL(toolURL, toolDest, time.Hour)
+	if err != nil {
+		log.Fatalf("Error downloading toolURL %s: %s", toolURL, err)
+	}
+	fmt.Printf("toolPath: %s\n", toolPath)
+
+	matchedHash, err := download.VerifyToolHash(pluginConfig[0], toolPath, resolvedVersion)
+	if err != nil {
+		log.Fatalf("Error verifying tool hash: %s", err)
+	}
+	fmt.Printf("tool hash verified? %t\n", matchedHash)
 }

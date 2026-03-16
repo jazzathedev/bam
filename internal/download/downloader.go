@@ -1,67 +1,110 @@
 package download
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/jazzathedev/bam/internal/plugin"
-	"github.com/jazzathedev/bam/internal/setup"
 )
 
-func DownloadURL(toolURL string) (string, error) {
-	fileName := path.Base(toolURL)
+// destPath is absolute to the file but should usually be in ~/.bam/cache
+func DownloadURL(url, destPath string, ttl time.Duration) (string, error) {
+	infoPath := destPath + ".info.json"
 
-	bamDir, err := setup.BamDir()
-	if err != nil {
-		return "", fmt.Errorf("Could not find ~/.bam: %w", err)
+	infoFile, err := os.Open(infoPath)
+
+	if errors.Is(err, os.ErrNotExist) {
+		infoFile, err = os.Create(infoPath)
+
+		if err != nil {
+			return "", fmt.Errorf("Unable to create cache info file: %w", err)
+		}
 	}
 
-	cacheDir := path.Join(bamDir, "cache")
-	cacheFilePath := path.Join(cacheDir, fileName)
+	decoder := json.NewDecoder(infoFile)
 
-	toolFile, err := os.Open(cacheFilePath)
+	type infoJson struct {
+		TTL time.Time `json:"ttl"`
+	}
 
-	if err != nil {
+	var infoTtl infoJson
+	decoder.Decode(&infoTtl)
+	sinceExpired := time.Since(infoTtl.TTL)
+	expired := sinceExpired > ttl
 
-		if errors.Is(err, os.ErrNotExist) {
-			// Error file not exist, make it
-			toolFile, err = os.Create(cacheFilePath)
+	if ttl == 0 {
+		expired = false
+	}
 
-			if err != nil {
-				return "", fmt.Errorf("Unable to create tool cache file: %w", err)
-			}
+	infoFile.Close()
 
-			defer toolFile.Close()
+	cacheFile, err := os.Open(destPath)
 
-			response, err := http.Get(toolURL)
+	// Cache file exist and it's not expired, return path
+	if (err == nil) && !expired {
+		return destPath, nil
+	}
 
-			if err != nil {
-				return "", fmt.Errorf("Unable to GET tool url %s: %w", toolURL, err)
-			}
+	// Error cache file not exist or it is expired
+	if errors.Is(err, os.ErrNotExist) || expired {
+		cacheFile.Close()
+		// It doesn't exist, or it does but it's expired
+		// Create truncates for us, so both paths are ok
+		cacheFile, err = os.Create(destPath)
 
-			defer response.Body.Close()
+		if err != nil {
+			return "", fmt.Errorf("Unable to create cache file: %w", err)
+		}
 
-			_, err = io.Copy(toolFile, response.Body)
-			if err != nil {
-				return "", fmt.Errorf("Unable to write tool to cache file: %w", err)
-			}
-		} else {
-			// Error file exist, can't open it
-			return "", fmt.Errorf("Unable to open tool cache file: %w", err)
+		defer cacheFile.Close()
+
+		// Cache file made, GET url
+		response, err := http.Get(url)
+		if err != nil {
+			return "", fmt.Errorf("Unable to GET url %s: %w", url, err)
+		}
+
+		defer response.Body.Close()
+
+		// URL got, write to cache file
+		_, err = io.Copy(cacheFile, response.Body)
+		if err != nil {
+			return "", fmt.Errorf("Unable to write to cache file: %w", err)
+		}
+
+		infoTtl.TTL = time.Now()
+		newInfoJson, err := json.Marshal(&infoTtl)
+
+		if err != nil {
+			return "", fmt.Errorf("Unable to write info.json due to json encoding: %w", err)
+		}
+
+		infoFile, err = os.Create(infoPath)
+		if err != nil {
+			return "", fmt.Errorf("Unable to open and truncate info.json for writing: %w", err)
+		}
+
+		_, err = io.Copy(infoFile, bytes.NewBuffer(newInfoJson))
+
+		if err != nil {
+			return "", fmt.Errorf("Unable to write info.json: %w", err)
 		}
 	} else {
-		// File exist, return path
-		return cacheFilePath, nil
+		// Error cache file exist, can't open it
+		return "", fmt.Errorf("Unable to open cache file: %w", err)
 	}
 
-	return cacheFilePath, nil
+	return destPath, nil
 }
 
 func VerifyToolHash(pluginStruct plugin.PluginConfig, toolBinaryPath, version string) (bool, error) {
@@ -98,7 +141,7 @@ func VerifyToolHash(pluginStruct plugin.PluginConfig, toolBinaryPath, version st
 		hashMap[parts[1]] = parts[0]
 	}
 
-	toolBinaryName := path.Base(toolBinaryPath)
+	toolBinaryName := filepath.Base(toolBinaryPath)
 
 	toolExpectedHash, ok := hashMap[toolBinaryName]
 	if !ok {
