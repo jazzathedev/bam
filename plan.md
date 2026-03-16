@@ -64,7 +64,7 @@ arch_map = { amd64   = "x64",  arm64 = "arm64" }
 ext_map  = { windows = "zip",  linux = "tar.gz", darwin = "tar.gz" }
 
 [install]
-strip_components = 1
+strip_components = true
 bin = ["bin/node", "bin/npm", "bin/npx"]   # which binaries get shims
 ```
 
@@ -188,6 +188,20 @@ A **single tiny Go binary** (or shell script fallback) that:
 
 > "Add `~/.bam/shims` to PATH in `~/.bashrc`? [Y/n]"
 > Then also prints the manual line regardless.
+
+---
+
+## Known Plugin Format TODOs
+
+Issues discovered during implementation - fix when building Component 10 (built-in plugins).
+
+| # | Issue | Detail |
+|---|-------|--------|
+| 1 | Remove `channels` field | `lts`, `beta`, `nightly` removed from scope (YAGNI) |
+| 2 | Platform-specific `bin` paths | Windows node has no `bin/` - needs `bin_map` like `os_map` e.g. `bin_map = { windows = ["node.exe"], linux = ["bin/node"] }` |
+| 3 | Hash file format field | Currently hardcoded to `{hash}  {filename}` (GNU format). Add `hash_format` to TOML to support other layouts |
+| 4 | `strip_prefix` on version list | Defined in TOML but not yet used in resolver - wire it up |
+| 5 | pnpm has no hash file | `hash_url = ""` should be handled gracefully (warn + proceed) |
 
 ---
 

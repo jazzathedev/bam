@@ -4,7 +4,7 @@ description = "Node.js JavaScript runtime"
 
 [versions]
 list_url = "https://nodejs.org/dist/index.json"
-list_path = "$[*].version"                                          # JSONPath to extract version list
+list_path = "$[*].version"                      # JSONPath to extract version list
 strip_prefix = "v"
 channels = { latest = "current" }
 
@@ -20,5 +20,5 @@ arch_map = { amd64 = "x64", arm64 = "arm64" }
 ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 
 [install]
-strip_components = 1
+strip_components = true
 bin = ["bin/node", "bin/npm", "bin/npx"] # which binaries get shims

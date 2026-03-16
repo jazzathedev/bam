@@ -39,7 +39,7 @@ type Platform struct {
 }
 
 type Install struct {
-	StripComponents int      `toml:"strip_components"`
+	StripComponents bool      `toml:"strip_components"`
 	Bin             []string `toml:"bin"`
 }
 

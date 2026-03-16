@@ -6,12 +6,17 @@ import (
 	"time"
 
 	"github.com/jazzathedev/bam/internal/download"
+	"github.com/jazzathedev/bam/internal/extract"
 	"github.com/jazzathedev/bam/internal/setup"
 	"github.com/jazzathedev/bam/internal/version"
 	"github.com/jazzathedev/bam/plugins"
 )
 
 func main() {
+	fmt.Print(extract.ExtractZip("C:\\Users\\jazza\\Downloads\\node-v22.22.1-win-x64.zip", "C:\\Users\\jazza\\Downloads\\temp\\", true))
+
+	return
+
 	goOs, arch := setup.DetectOS()
 	fmt.Println(goOs, arch)
 
