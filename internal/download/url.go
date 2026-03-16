@@ -8,14 +8,14 @@ import (
 	"github.com/jazzathedev/bam/internal/setup"
 )
 
-func ConstructURL(pluginStruct plugin.PluginConfig, version string) (string, error) {
+func ConstructURL(pluginConfig plugin.PluginConfig, version string) (string, error) {
 
-	urlTemplate := pluginStruct.Download.URL
+	urlTemplate := pluginConfig.Download.URL
 	// URL template contains "version", "os", "arch" and "ext". All but "version" need mapping.
 
-	osMapping := pluginStruct.Platform.OSMap
-	archMapping := pluginStruct.Platform.ArchMap
-	extMapping := pluginStruct.Platform.ExtMap
+	osMapping := pluginConfig.Platform.OSMap
+	archMapping := pluginConfig.Platform.ArchMap
+	extMapping := pluginConfig.Platform.ExtMap
 
 	userOS, userArch := setup.DetectOS()
 

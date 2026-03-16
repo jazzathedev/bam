@@ -37,7 +37,7 @@ func filter(array []string, filterFunction func(string) bool) []string {
 	return filteredArray
 }
 
-func ResolveVersion(rawVersionString string, pluginStruct plugin.PluginConfig) (string, error) {
+func ResolveVersion(rawVersionString string, pluginConfig plugin.PluginConfig) (string, error) {
 	if !needsExpanding(rawVersionString) {
 		return rawVersionString, nil
 	}
@@ -45,32 +45,33 @@ func ResolveVersion(rawVersionString string, pluginStruct plugin.PluginConfig) (
 	// TODO: cache the version list response to ~/.bam/cache/<tool>/versions.json
 	// with a TTL (e.g. 1 hour). Check cache before hitting the network.
 	// Implement after Component 4 (downloader) has cache infrastructure in place.
-	resp, err := http.Get(pluginStruct.Versions.ListURL)
+	response, err := http.Get(pluginConfig.Versions.ListURL)
 	if err != nil {
 		return "", fmt.Errorf("Error fetching tool versions list: %w", err)
 	}
 
-	defer resp.Body.Close()
-	responseBytes, err := io.ReadAll(resp.Body)
+	defer response.Body.Close()
+
+	responseBytes, err := io.ReadAll(response.Body)
 	if err != nil {
 		return "", fmt.Errorf("Error reading response body: %w", err)
 	}
 
-	jsonData, err := oj.Parse(responseBytes)
+	responseJson, err := oj.Parse(responseBytes)
 	if err != nil {
 		return "", fmt.Errorf("Error parsing JSON response: %w", err)
 	}
 
-	jsonExpression, err := jp.ParseString(pluginStruct.Versions.ListPath)
+	jsonExpression, err := jp.ParseString(pluginConfig.Versions.ListPath)
 	if err != nil {
 		return "", fmt.Errorf("Error parsing JSON expression: %w", err)
 	}
 
-	versions := jsonExpression.Get(jsonData)
+	responseVersions := jsonExpression.Get(responseJson)
 	var versionStrings []string
 
-	for _, version := range versions {
-		if versionString, ok := version.(string); ok {
+	for _, responseVersion := range responseVersions {
+		if versionString, ok := responseVersion.(string); ok {
 			versionStrings = append(versionStrings, versionString)
 		}
 	}
@@ -92,12 +93,14 @@ func ResolveVersion(rawVersionString string, pluginStruct plugin.PluginConfig) (
 	var majorVersions []string
 
 	if strings.Contains(rawVersionString, "x") {
-		majorVersions = filter(strippedVersions, func(s string) bool {
-			return strings.HasPrefix(s, strings.Split(rawVersionString, ".")[0])
+		majorVersions = filter(strippedVersions, func(str string) bool {
+			return strings.HasPrefix(str, strings.Split(rawVersionString, ".")[0])
 		})
 
 		return majorVersions[len(majorVersions)-1], nil
-	} else if strings.Contains(rawVersionString, "latest") {
+	}
+
+	if strings.Contains(rawVersionString, "latest") {
 		return strippedVersions[len(strippedVersions)-1], nil
 	}
 

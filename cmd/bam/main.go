@@ -46,7 +46,7 @@ func main() {
 	}
 	fmt.Printf("toolPath: %s\n", toolPath)
 
-	matchedHash, err := download.VerifyToolHash(pluginConfig[0], toolPath, resolvedVersion)
+	matchedHash, err := download.VerifyToolFile(pluginConfig[0], toolPath, resolvedVersion)
 	if err != nil {
 		log.Fatalf("Error verifying tool hash: %s", err)
 	}

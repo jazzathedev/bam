@@ -27,46 +27,46 @@ func DownloadURL(url, destPath string, ttl time.Duration) (string, error) {
 		infoFile, err = os.Create(infoPath)
 
 		if err != nil {
-			return "", fmt.Errorf("Unable to create cache info file: %w", err)
+			return "", fmt.Errorf("Unable to create info file: %w", err)
 		}
 	}
 
 	decoder := json.NewDecoder(infoFile)
 
-	type infoJson struct {
+	type destInfo struct {
 		TTL time.Time `json:"ttl"`
 	}
 
-	var infoTtl infoJson
-	decoder.Decode(&infoTtl)
-	sinceExpired := time.Since(infoTtl.TTL)
-	expired := sinceExpired > ttl
+	var infoJson destInfo
+	decoder.Decode(&infoJson)
+	sinceExpired := time.Since(infoJson.TTL)
+	isExpired := sinceExpired > ttl
 
 	if ttl == 0 {
-		expired = false
+		isExpired = false
 	}
 
 	infoFile.Close()
 
-	cacheFile, err := os.Open(destPath)
+	destFile, err := os.Open(destPath)
 
 	// Cache file exist and it's not expired, return path
-	if (err == nil) && !expired {
+	if (err == nil) && !isExpired {
 		return destPath, nil
 	}
 
 	// Error cache file not exist or it is expired
-	if errors.Is(err, os.ErrNotExist) || expired {
-		cacheFile.Close()
+	if errors.Is(err, os.ErrNotExist) || isExpired {
+		destFile.Close()
 		// It doesn't exist, or it does but it's expired
 		// Create truncates for us, so both paths are ok
-		cacheFile, err = os.Create(destPath)
+		destFile, err = os.Create(destPath)
 
 		if err != nil {
-			return "", fmt.Errorf("Unable to create cache file: %w", err)
+			return "", fmt.Errorf("Unable to create file: %w", err)
 		}
 
-		defer cacheFile.Close()
+		defer destFile.Close()
 
 		// Cache file made, GET url
 		response, err := http.Get(url)
@@ -77,13 +77,13 @@ func DownloadURL(url, destPath string, ttl time.Duration) (string, error) {
 		defer response.Body.Close()
 
 		// URL got, write to cache file
-		_, err = io.Copy(cacheFile, response.Body)
+		_, err = io.Copy(destFile, response.Body)
 		if err != nil {
-			return "", fmt.Errorf("Unable to write to cache file: %w", err)
+			return "", fmt.Errorf("Unable to write to file: %w", err)
 		}
 
-		infoTtl.TTL = time.Now()
-		newInfoJson, err := json.Marshal(&infoTtl)
+		infoJson.TTL = time.Now()
+		newInfoJson, err := json.Marshal(&infoJson)
 
 		if err != nil {
 			return "", fmt.Errorf("Unable to write info.json due to json encoding: %w", err)
@@ -94,6 +94,8 @@ func DownloadURL(url, destPath string, ttl time.Duration) (string, error) {
 			return "", fmt.Errorf("Unable to open and truncate info.json for writing: %w", err)
 		}
 
+		defer infoFile.Close()
+
 		_, err = io.Copy(infoFile, bytes.NewBuffer(newInfoJson))
 
 		if err != nil {
@@ -101,14 +103,14 @@ func DownloadURL(url, destPath string, ttl time.Duration) (string, error) {
 		}
 	} else {
 		// Error cache file exist, can't open it
-		return "", fmt.Errorf("Unable to open cache file: %w", err)
+		return "", fmt.Errorf("Unable to open file: %w", err)
 	}
 
 	return destPath, nil
 }
 
-func VerifyToolHash(pluginStruct plugin.PluginConfig, toolBinaryPath, version string) (bool, error) {
-	hashURL := strings.ReplaceAll(pluginStruct.Download.HashURL, "{version}", version)
+func VerifyToolFile(pluginConfig plugin.PluginConfig, toolPath, version string) (bool, error) {
+	hashURL := strings.ReplaceAll(pluginConfig.Download.HashURL, "{version}", version)
 
 	response, err := http.Get(hashURL)
 	if err != nil {
@@ -141,25 +143,25 @@ func VerifyToolHash(pluginStruct plugin.PluginConfig, toolBinaryPath, version st
 		hashMap[parts[1]] = parts[0]
 	}
 
-	toolBinaryName := filepath.Base(toolBinaryPath)
+	toolFileName := filepath.Base(toolPath)
 
-	toolExpectedHash, ok := hashMap[toolBinaryName]
+	toolExpectedHash, ok := hashMap[toolFileName]
 	if !ok {
-		return false, fmt.Errorf("Hash map does not contain entry for tool binary %s", toolBinaryName)
+		return false, fmt.Errorf("Hash map does not contain entry for tool file %s", toolFileName)
 	}
 
 	toolExpectedHash = strings.ToLower(toolExpectedHash)
 
-	toolFile, err := os.Open(toolBinaryPath)
+	toolFile, err := os.Open(toolPath)
 	if err != nil {
-		return false, fmt.Errorf("Unable to open tool binary: %w", err)
+		return false, fmt.Errorf("Unable to open tool file: %w", err)
 	}
 
 	hasher := sha256.New()
 
 	_, err = io.Copy(hasher, toolFile)
 	if err != nil {
-		return false, fmt.Errorf("Unable to copy tool binary into hasher: %w", err)
+		return false, fmt.Errorf("Unable to copy tool file into hasher: %w", err)
 	}
 
 	toolRealHash := strings.ToLower(hex.EncodeToString(hasher.Sum(nil)))
