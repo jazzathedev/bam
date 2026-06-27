@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/jazzathedev/bam/internal/plugin"
@@ -38,7 +39,7 @@ func LoadBuiltinPlugins() ([]plugin.PluginConfig, error) {
 	var pluginStrings []string
 
 	for _, dirEntry := range dirEntries {
-		pluginString, err := BuiltinPlugins.ReadFile(filepath.Join("builtin", dirEntry.Name()))
+		pluginString, err := BuiltinPlugins.ReadFile(path.Join("builtin", dirEntry.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("Unable to load builtin plugins: %w", err)
 		}
