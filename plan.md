@@ -45,6 +45,8 @@
 name = "node"
 aliases = ["nodejs"]
 description = "Node.js JavaScript runtime"
+# Not yet implemented
+schema = 1
 
 [versions]
 list_url = "https://nodejs.org/dist/index.json"
@@ -153,18 +155,19 @@ JSON record of everything bam has ever touched:
 ## CLI Commands
 
 ```
-bam install <tool>[@<version>]   install a tool (defaults to latest)
-bam uninstall <tool>[@<version>] remove a version
-bam uninstall --all              full nuke using install.log
-bam use <tool>@<version>         set global pin
-bam list                         show all installed tools + versions
-bam list <tool>                  show available versions of a tool
-bam which <tool>                 show resolved binary path for current dir
-bam update                       update bam itself
-bam plugin add <path/url>        add a user plugin
-bam plugin list                  list all plugins (builtin + user)
-bam env                          print bam dirs, PATH status, active versions
-bam setup                        run PATH setup (also runs on first install)
+bam install <tool>[@<version>]         install a tool (defaults to latest)
+bam install <tool>[@<version>] --use   install a tool (defaults to latest) and pins it. currently pins regardless
+bam uninstall <tool>[@<version>]       remove a version
+bam uninstall --all                    full nuke using install.log
+bam use <tool>@<version>               set global pin
+bam list                               show all installed tools + versions
+bam list <tool>                        show available versions of a tool
+bam which <tool>                       show resolved binary path for current dir
+bam update                             update bam itself
+bam plugin add <path/url>              add a user plugin
+bam plugin list                        list all plugins (builtin + user)
+bam env                                print bam dirs, PATH status, active versions
+bam setup                              run PATH setup (also runs on first install)
 ```
 
 ---
@@ -195,13 +198,14 @@ A **single tiny Go binary** (or shell script fallback) that:
 
 Issues discovered during implementation - fix when building Component 10 (built-in plugins).
 
-| # | Issue | Detail |
-|---|-------|--------|
-| 1 | Remove `channels` field | `lts`, `beta`, `nightly` removed from scope (YAGNI) |
-| 2 | Platform-specific `bin` paths | Windows node has no `bin/` - needs `bin_map` like `os_map` e.g. `bin_map = { windows = ["node.exe"], linux = ["bin/node"] }` |
-| 3 | Hash file format field | Currently hardcoded to `{hash}  {filename}` (GNU format). Add `hash_format` to TOML to support other layouts |
-| 4 | `strip_prefix` on version list | Defined in TOML but not yet used in resolver - wire it up |
-| 5 | pnpm has no hash file | `hash_url = ""` should be handled gracefully (warn + proceed) |
+| #   | Issue                                 | Detail                                                                                                                                                                      |
+| --- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Remove `channels` field               | `lts`, `beta`, `nightly` removed from scope (YAGNI)                                                                                                                         |
+| 2   | Platform-specific `bin` paths         | Windows node has no `bin/` - needs `bin_map` like `os_map` e.g. `bin_map = { windows = ["node.exe"], linux = ["bin/node"] }`                                                |
+| 3   | Hash file format field                | Currently hardcoded to `{hash}  {filename}` (GNU format). Add `hash_format` to TOML to support other layouts                                                                |
+| 4   | `strip_prefix` on version list        | Defined in TOML but not yet used in resolver - wire it up                                                                                                                   |
+| 5   | pnpm has no hash file                 | `hash_url = ""` should be handled gracefully (warn + proceed)                                                                                                               |
+| 6   | Imperative plugin support - undecided | I have not yet decided if a comprehensive declarative TOML system is enough to handle possible weirdness other tools may have. Running un-compiled go code is not feasible. |
 
 ---
 

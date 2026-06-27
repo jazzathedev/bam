@@ -73,6 +73,7 @@ func Install(tool, rawVersion string) error {
 		return fmt.Errorf("Error extracting tool archive: %w", err)
 	}
 
+	// TODO: move pinning outside of install function
 	versionPinPath := filepath.Join(bam, "versions", cfg.Name)
 	err = os.MkdirAll(filepath.Dir(versionPinPath), 0755)
 	if err != nil {
