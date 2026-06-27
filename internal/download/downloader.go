@@ -19,6 +19,11 @@ import (
 
 // destPath is absolute to the file but should usually be in ~/.bam/cache
 func DownloadURL(url, destPath string, ttl time.Duration) (string, error) {
+	err := os.MkdirAll(filepath.Dir(destPath), 0755)
+	if err != nil {
+		return "", fmt.Errorf("Unable to create destPath's dir")
+	}
+
 	infoPath := destPath + ".info.json"
 
 	infoFile, err := os.Open(infoPath)

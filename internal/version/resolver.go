@@ -2,13 +2,16 @@ package version
 
 import (
 	"fmt"
-	"io"
-	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"golang.org/x/mod/semver"
 
+	"github.com/jazzathedev/bam/internal/download"
 	"github.com/jazzathedev/bam/internal/plugin"
+	"github.com/jazzathedev/bam/internal/setup"
 	"github.com/ohler55/ojg/jp"
 	"github.com/ohler55/ojg/oj"
 )
@@ -42,22 +45,24 @@ func ResolveVersion(rawVersionString string, pluginConfig plugin.PluginConfig) (
 		return rawVersionString, nil
 	}
 
-	// TODO: cache the version list response to ~/.bam/cache/<tool>/versions.json
-	// with a TTL (e.g. 1 hour). Check cache before hitting the network.
-	// Implement after Component 4 (downloader) has cache infrastructure in place.
-	response, err := http.Get(pluginConfig.Versions.ListURL)
+	bam, err := setup.BamDir()
 	if err != nil {
-		return "", fmt.Errorf("Error fetching tool versions list: %w", err)
+		return "", fmt.Errorf("Error finding .bam folder: %w", err)
 	}
 
-	defer response.Body.Close()
+	jsonPath := filepath.Join(bam, "cache", pluginConfig.Name, "versions.json")
 
-	responseBytes, err := io.ReadAll(response.Body)
+	_, err = download.DownloadURL(pluginConfig.Versions.ListURL, jsonPath, time.Hour)
+	if err != nil {
+		return "", fmt.Errorf("Error downloading versions list: %w", err)
+	}
+
+	versionBytes, err := os.ReadFile(jsonPath)
 	if err != nil {
 		return "", fmt.Errorf("Error reading response body: %w", err)
 	}
 
-	responseJson, err := oj.Parse(responseBytes)
+	versionJson, err := oj.Parse(versionBytes)
 	if err != nil {
 		return "", fmt.Errorf("Error parsing JSON response: %w", err)
 	}
@@ -67,7 +72,7 @@ func ResolveVersion(rawVersionString string, pluginConfig plugin.PluginConfig) (
 		return "", fmt.Errorf("Error parsing JSON expression: %w", err)
 	}
 
-	responseVersions := jsonExpression.Get(responseJson)
+	responseVersions := jsonExpression.Get(versionJson)
 	var versionStrings []string
 
 	for _, responseVersion := range responseVersions {
