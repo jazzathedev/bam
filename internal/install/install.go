@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/jazzathedev/bam/internal/download"
 	"github.com/jazzathedev/bam/internal/extract"
@@ -17,60 +16,72 @@ import (
 	"github.com/jazzathedev/bam/plugins"
 )
 
-func Install(tool, rawVersion string) (string, error) {
+type Installed struct {
+	Name    string
+	Version string
+}
+
+func Install(tool, rawVersion string) (Installed, error) {
 	cfg, err := findPlugin(tool)
 	if err != nil {
-		return "", fmt.Errorf("Error finding matching plugin: %w", err)
+		return Installed{}, fmt.Errorf("Error finding matching plugin: %w", err)
 	}
 
 	bam := setup.BamDir()
 
 	versionString, err := version.ResolveVersion(rawVersion, cfg)
 	if err != nil {
-		return "", fmt.Errorf("Error resolving version string %s: %w", rawVersion, err)
+		return Installed{}, fmt.Errorf("Error resolving version string %s: %w", rawVersion, err)
+	}
+
+	extractDest := filepath.Join(bam, "installs", cfg.Name, versionString)
+	// We could Stat the path without error which means it does exist and didn't overwise error
+	// This might need strengthening, what if the files inside the folder don't exist?
+	// Not sure how to handle that nicely
+	if _, err := os.Stat(extractDest); err == nil {
+		return Installed{cfg.Name, versionString}, nil
 	}
 
 	url, err := download.ConstructURL(cfg, versionString)
 	if err != nil {
-		return "", fmt.Errorf("Error constructing download URL: %w", err)
+		return Installed{}, fmt.Errorf("Error constructing download URL: %w", err)
 	}
 
 	fileName := path.Base(url)
 	dest := filepath.Join(bam, "cache", cfg.Name, fileName)
 
-	archivePath, err := download.DownloadURL(url, dest, time.Hour)
+	archivePath, err := download.DownloadURL(url, dest, 0)
 	if err != nil {
-		return "", fmt.Errorf("Error downloading URL: %w", err)
+		return Installed{}, fmt.Errorf("Error downloading URL: %w", err)
 	}
 
 	valid, err := download.VerifyToolFile(cfg, archivePath, versionString)
 	if err != nil {
-		return "", fmt.Errorf("Error checking tool file validity: %w", err)
+		return Installed{}, fmt.Errorf("Error checking tool file validity: %w", err)
 	}
 
 	if !valid {
 		err := os.Remove(archivePath)
 		if err != nil {
-			return "", fmt.Errorf("Error removing invalid tool file, please remove %s manually: %w", archivePath, err)
+			return Installed{}, fmt.Errorf("Error removing invalid tool file, please remove %s manually: %w", archivePath, err)
 		}
 
 		archiveJson := archivePath + ".info.json"
 
 		err = os.Remove(archiveJson)
 		if err != nil {
-			return "", fmt.Errorf("Error removing invalid tool file info.json, please remove %s manually: %w", archiveJson, err)
+			return Installed{}, fmt.Errorf("Error removing invalid tool file info.json, please remove %s manually: %w", archiveJson, err)
 		}
 
-		return "", fmt.Errorf("Invalid tool file removed. Please try your command again.")
+		return Installed{}, fmt.Errorf("Invalid tool file removed. Please try your command again.")
 	}
 
-	extractDest := filepath.Join(bam, "installs", cfg.Name, versionString)
 	err = extract.Extractor(cfg, archivePath, extractDest)
 	if err != nil {
-		return "", fmt.Errorf("Error extracting tool archive: %w", err)
+		return Installed{}, fmt.Errorf("Error extracting tool archive: %w", err)
 	}
 
-	return versionString, nil
+	return Installed{cfg.Name, versionString}, nil
 }
 
 func normalize(s string) string {

@@ -8,12 +8,12 @@ import (
 )
 
 func main() {
-	version, err := install.Install("node", "latest")
+	installedTool, err := install.Install("node", "latest")
 	if err != nil {
 		log.Fatalf("install failed: %s", err)
 	}
 
-	err = install.SetGlobal("node", version)
+	err = install.SetGlobal("node", installedTool.Name)
 	if err != nil {
 		log.Fatalf("pinning failed: %s", err)
 	}
