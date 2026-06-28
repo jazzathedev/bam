@@ -45,29 +45,56 @@
 name = "node"
 aliases = ["nodejs"]
 description = "Node.js JavaScript runtime"
-# Not yet implemented
-schema = 1
+schema = 2
 
 [versions]
 list_url = "https://nodejs.org/dist/index.json"
-list_path = "$[*].version"        # JSONPath to extract version list
+list_path = "$[*].version"                      # JSONPath to extract version list
 strip_prefix = "v"
-channels = { latest = "current", lts = "lts", nightly = "nightly" }
 
 [download]
 url = "https://nodejs.org/dist/v{version}/node-v{version}-{os}-{arch}.{ext}"
 hash_url = "https://nodejs.org/dist/v{version}/SHASUMS256.txt"
 hash_algo = "sha256"
-hash_format = "gnu"               # "gnu" = "hash  file" | "bsd" = "SHA256 (file) = hash"
+hash_format = "gnu"                                                          # "gnu" = "hash  file" | "bsd" = "SHA256 (file) = hash"
 
 [platform]
-os_map   = { windows = "win",  linux = "linux", darwin = "darwin" }
-arch_map = { amd64   = "x64",  arm64 = "arm64" }
-ext_map  = { windows = "zip",  linux = "tar.gz", darwin = "tar.gz" }
+os_map = { windows = "win", linux = "linux", darwin = "darwin" }
+arch_map = { amd64 = "x64", arm64 = "arm64" }
+ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 
 [install]
 strip_components = true
-bin = ["bin/node", "bin/npm", "bin/npx"]   # which binaries get shims
+
+[[install.bin]]
+name = "node"
+run = { windows = ["node.exe"], linux = ["bin/node"], darwin = ["bin/node"] }
+
+[[install.bin]]
+name = "npm"
+run = { windows = [
+	"node.exe",
+	"node_modules/npm/bin/npm-cli.js",
+], linux = [
+	"bin/node",
+	"lib/node_modules/npm/bin/npm-cli.js",
+], darwin = [
+	"bin/node",
+	"lib/node_modules/npm/bin/npm-cli.js",
+] }
+
+[[install.bin]]
+name = "npx"
+run = { windows = [
+	"node.exe",
+	"node_modules/npm/bin/npx-cli.js",
+], linux = [
+	"bin/node",
+	"lib/node_modules/npm/bin/npx-cli.js",
+], darwin = [
+	"bin/node",
+	"lib/node_modules/npm/bin/npx-cli.js",
+] }
 ```
 
 ---
@@ -81,6 +108,21 @@ The generic shim is a **separate minimal Go program** (its own module), compiled
 - bam extracts the embedded generic shim binary
 - Copies it to `~/.bam/shims/node.exe`, `~/.bam/shims/npm.exe`, etc.
 - The shim itself is stateless - no version baked in
+- Resolve current OS and writes the relevant run list
+
+```json
+{
+	"node": { "tool": "node", "run": ["node.exe"] },
+	"npm": {
+		"tool": "node",
+		"run": ["node.exe", "node_modules/npm/bin/npm-cli.js"]
+	},
+	"npx": {
+		"tool": "node",
+		"run": ["node.exe", "node_modules/npm/bin/npx-cli.js"]
+	}
+}
+```
 
 **At invocation time** (user runs `node`):
 
@@ -198,14 +240,14 @@ A **single tiny Go binary** (or shell script fallback) that:
 
 Issues discovered during implementation - fix when building Component 10 (built-in plugins).
 
-| #   | Issue                                 | Detail                                                                                                                                                                      |
-| --- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Remove `channels` field               | `lts`, `beta`, `nightly` removed from scope (YAGNI)                                                                                                                         |
-| 2   | Platform-specific `bin` paths         | Windows node has no `bin/` - needs `bin_map` like `os_map` e.g. `bin_map = { windows = ["node.exe"], linux = ["bin/node"] }`                                                |
-| 3   | Hash file format field                | Currently hardcoded to `{hash}  {filename}` (GNU format). Add `hash_format` to TOML to support other layouts                                                                |
-| 4   | `strip_prefix` on version list        | Defined in TOML but not yet used in resolver - wire it up                                                                                                                   |
-| 5   | pnpm has no hash file                 | `hash_url = ""` should be handled gracefully (warn + proceed)                                                                                                               |
-| 6   | Imperative plugin support - undecided | I have not yet decided if a comprehensive declarative TOML system is enough to handle possible weirdness other tools may have. Running un-compiled go code is not feasible. |
+| #   | Issue                                 | Detail                                                                                                                                                                                                                                                                                                              |
+| --- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Platform-specific `bin` paths         | Windows node has no `bin/` - needs `bin_map` like `os_map` e.g. `bin_map = { windows = ["node.exe"], linux = ["bin/node"] }`                                                                                                                                                                                        |
+| 2   | Hash file format field                | Currently hardcoded to `{hash}  {filename}` (GNU format). Add `hash_format` to TOML to support other layouts                                                                                                                                                                                                        |
+| 3   | `strip_prefix` on version list        | Defined in TOML but not yet used in resolver - wire it up                                                                                                                                                                                                                                                           |
+| 4   | pnpm has no hash file                 | `hash_url = ""` should be handled gracefully (warn + proceed)                                                                                                                                                                                                                                                       |
+| 5   | Imperative plugin support - undecided | I have not yet decided if a comprehensive declarative TOML system is enough to handle possible weirdness other tools may have. Running un-compiled go code is not feasible.                                                                                                                                         |
+| 6   | Global packages support               | Right now our toml format defines a path and args to run, meaning we can define node, npm and npx for one tool. How do we handle global packages? 1. Node installs them INTO the installs folder so its a) not pristine and b) now tied to version and 2. How do we, for example, make a shim for `tsc` or similar? |
 
 ---
 

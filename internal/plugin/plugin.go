@@ -8,6 +8,7 @@ type PluginConfig struct {
 	Name        string   `toml:"name"`
 	Aliases     []string `toml:"aliases"`
 	Description string   `toml:"description"`
+	Schema      int      `toml:"schema"`
 	Versions    Versions `toml:"versions"`
 	Download    Download `toml:"download"`
 	Platform    Platform `toml:"platform"`
@@ -15,14 +16,9 @@ type PluginConfig struct {
 }
 
 type Versions struct {
-	ListURL     string   `toml:"list_url"`
-	ListPath    string   `toml:"list_path"`
-	StripPrefix string   `toml:"strip_prefix"`
-	Channels    Channels `toml:"channels"`
-}
-
-type Channels struct {
-	Latest string `toml:"latest"`
+	ListURL     string `toml:"list_url"`
+	ListPath    string `toml:"list_path"`
+	StripPrefix string `toml:"strip_prefix"`
 }
 
 type Download struct {
@@ -39,8 +35,13 @@ type Platform struct {
 }
 
 type Install struct {
-	StripComponents bool      `toml:"strip_components"`
-	Bin             []string `toml:"bin"`
+	StripComponents bool  `toml:"strip_components"`
+	Bin             []Bin `toml:"bin"`
+}
+
+type Bin struct {
+	Name string              `toml:"name"`
+	Run  map[string][]string `toml:"run"`
 }
 
 func LoadPlugin(pluginFileString string) (PluginConfig, error) {

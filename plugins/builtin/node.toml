@@ -1,12 +1,12 @@
 name = "node"
 aliases = ["nodejs"]
 description = "Node.js JavaScript runtime"
+schema = 2
 
 [versions]
 list_url = "https://nodejs.org/dist/index.json"
 list_path = "$[*].version"                      # JSONPath to extract version list
 strip_prefix = "v"
-channels = { latest = "current" }
 
 [download]
 url = "https://nodejs.org/dist/v{version}/node-v{version}-{os}-{arch}.{ext}"
@@ -21,4 +21,33 @@ ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 
 [install]
 strip_components = true
-bin = ["bin/node", "bin/npm", "bin/npx"] # which binaries get shims
+
+[[install.bin]]
+name = "node"
+run = { windows = ["node.exe"], linux = ["bin/node"], darwin = ["bin/node"] }
+
+[[install.bin]]
+name = "npm"
+run = { windows = [
+	"node.exe",
+	"node_modules/npm/bin/npm-cli.js",
+], linux = [
+	"bin/node",
+	"lib/node_modules/npm/bin/npm-cli.js",
+], darwin = [
+	"bin/node",
+	"lib/node_modules/npm/bin/npm-cli.js",
+] }
+
+[[install.bin]]
+name = "npx"
+run = { windows = [
+	"node.exe",
+	"node_modules/npm/bin/npx-cli.js",
+], linux = [
+	"bin/node",
+	"lib/node_modules/npm/bin/npx-cli.js",
+], darwin = [
+	"bin/node",
+	"lib/node_modules/npm/bin/npx-cli.js",
+] }
