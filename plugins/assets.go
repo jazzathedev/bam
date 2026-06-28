@@ -52,10 +52,7 @@ func LoadBuiltinPlugins() ([]plugin.PluginConfig, error) {
 }
 
 func LoadUserPlugins() ([]plugin.PluginConfig, error) {
-	bam, err := setup.BamDir()
-	if err != nil {
-		return nil, err
-	}
+	bam := setup.BamDir()
 
 	var pluginStrings []string
 

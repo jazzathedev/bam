@@ -8,8 +8,15 @@ import (
 )
 
 func main() {
-	if err := install.Install("node", "latest"); err != nil {
+	version, err := install.Install("node", "latest")
+	if err != nil {
 		log.Fatalf("install failed: %s", err)
 	}
+
+	err = install.SetGlobal("node", version)
+	if err != nil {
+		log.Fatalf("pinning failed: %s", err)
+	}
+
 	fmt.Println("done")
 }

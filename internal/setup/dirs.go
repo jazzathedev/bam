@@ -4,22 +4,27 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
-func BamDir() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
+var (
+	bamDir  string
+	bamOnce sync.Once
+)
 
-	return filepath.Join(home, ".bam"), nil
+func BamDir() string {
+	bamOnce.Do(func() {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			panic("cannot resolve home dir: " + err.Error())
+		}
+		bamDir = filepath.Join(home, ".bam")
+	})
+	return bamDir
 }
 
 func MakeDirs() error {
-	bam, err := BamDir()
-	if err != nil {
-		return fmt.Errorf("Error finding .bam folder: %w", err)
-	}
+	bam := BamDir()
 
 	if err := os.MkdirAll(bam, 0755); err != nil {
 		return fmt.Errorf("Making .bam: %w", err)

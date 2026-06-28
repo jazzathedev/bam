@@ -45,14 +45,11 @@ func ResolveVersion(rawVersionString string, pluginConfig plugin.PluginConfig) (
 		return rawVersionString, nil
 	}
 
-	bam, err := setup.BamDir()
-	if err != nil {
-		return "", fmt.Errorf("Error finding .bam folder: %w", err)
-	}
+	bam := setup.BamDir()
 
 	jsonPath := filepath.Join(bam, "cache", pluginConfig.Name, "versions.json")
 
-	_, err = download.DownloadURL(pluginConfig.Versions.ListURL, jsonPath, time.Hour)
+	_, err := download.DownloadURL(pluginConfig.Versions.ListURL, jsonPath, time.Hour)
 	if err != nil {
 		return "", fmt.Errorf("Error downloading versions list: %w", err)
 	}
