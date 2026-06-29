@@ -10,5 +10,5 @@ build:
 run-shim:
 	cd shim && go run ./
 
-run-build:
+build-shim:
 	cd shim && go build ./
