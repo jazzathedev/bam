@@ -253,18 +253,18 @@ Issues discovered during implementation - fix when building Component 10 (built-
 
 ## Implementation Order
 
-| #   | Component                       | Notes                                              |
-| --- | ------------------------------- | -------------------------------------------------- |
-| 1   | Core dirs + config bootstrap    | First-run setup, OS/arch detection                 |
-| 2   | Plugin loader                   | TOML parsing, builtin + user discovery             |
-| 3   | Version resolver                | latest/x patterns, fetch+cache version list        |
-| 4   | Downloader + cache + hash check | Check cache before download, verify hash           |
-| 5   | Extractor                       | tar.gz, tar.xz, zip, strip_components              |
-| 6   | Install manager                 | Wire 3-5, write to installs/, update versions/     |
-| 7   | Shim binary                     | Separate Go module, embedded into bam              |
-| 8   | Shim generator                  | Copy+rename shim on install                        |
-| 9   | PATH manager                    | Shell detection, profile modification, install.log |
-| 10  | Built-in plugins                | node, pnpm, bun, deno, go TOMLs                    |
-| 11  | Local version resolution        | .bam, package.json, .priority, dir walking         |
-| 12  | Full CLI                        | All commands wired up                              |
-| 13  | Bootstrap installer             | Standalone tiny binary                             |
+| #   | Component                       | Notes                                                       |
+| --- | ------------------------------- | ----------------------------------------------------------- |
+| 1   | Core dirs + config bootstrap    | First-run setup, OS/arch detection                          |
+| 2   | Plugin loader                   | TOML parsing, builtin + user discovery                      |
+| 3   | Version resolver                | latest/x patterns, fetch+cache version list                 |
+| 4   | Downloader + cache + hash check | Check cache before download, verify hash                    |
+| 5   | Extractor                       | tar.gz, tar.xz, zip, strip_components                       |
+| 6   | Install manager                 | Wire 3-5, write to installs/, update versions/              |
+| 7   | Shim binary                     | Separate Go module, embedded into bam                       |
+| 8   | Shim generator                  | Copy (or hardlink) +rename shim on install and write shims/ |
+| 9   | PATH manager                    | Shell detection, profile modification, install.log          |
+| 10  | Built-in plugins                | node, pnpm, bun, deno, go TOMLs                             |
+| 11  | Local version resolution        | .bam, package.json, .priority, dir walking                  |
+| 12  | Full CLI                        | All commands wired up                                       |
+| 13  | Bootstrap installer             | Standalone tiny binary                                      |
