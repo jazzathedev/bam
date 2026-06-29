@@ -11,4 +11,4 @@ run-shim:
 	cd shim && go run ./
 
 build-shim:
-	cd shim && go build ./
+	cd shim && go build -ldflags="-s -w" ./

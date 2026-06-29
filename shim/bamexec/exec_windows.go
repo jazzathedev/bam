@@ -3,20 +3,22 @@
 package bamexec
 
 import (
-	"errors"
 	"os"
 	"os/exec"
 )
 
 // Unfortunately windows does not have support for execve so we need to handle sigs and exit codes ourselves
 // Unlike execve, windows DOES return stuff on exit so lets just make it not return on success
-func Execute(execPath string, args []string) error {
+func Execute(argv []string) error {
 
-	cmd := exec.Command("")
+	cmd := exec.Command(argv[0], argv[1:]...)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
-	cmd.Run()
-	cmd.ProcessState.ExitCode() // Yummy exit code if its non 0 exit
 
-	return errors.New("Shut up go")
+	err := cmd.Run()
+	if _, ok := err.(*exec.ExitError); err != nil && !ok {
+		return err // We couldn't even launch it
+	}
 
+	os.Exit(cmd.ProcessState.ExitCode())
+	return nil // Can't reach me!
 }

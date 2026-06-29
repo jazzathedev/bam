@@ -13,7 +13,7 @@ func main() {
 		log.Fatalf("install failed: %s", err)
 	}
 
-	err = install.SetGlobal("node", installedTool.Name)
+	err = install.SetGlobal(installedTool.Name, installedTool.Version)
 	if err != nil {
 		log.Fatalf("pinning failed: %s", err)
 	}

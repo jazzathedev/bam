@@ -1,0 +1,6 @@
+{
+	"node": { "tool": "node", "run": ["node.exe"] },
+	"npm": { "tool": "node", "run": ["node.exe", "node_modules/npm/bin/npm-cli.js"] },
+	"npx": { "tool": "node", "run": ["node.exe", "node_modules/npm/bin/npx-cli.js"] },
+	"shim": { "tool": "bam", "run": ["bam.exe"] }
+}

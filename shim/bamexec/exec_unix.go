@@ -2,10 +2,12 @@
 
 package bamexec
 
-import "errors"
+import (
+	"os"
+	"syscall"
+)
 
 // On unix we will use syscall.Exec() which will handle sigs and exit codes for us
-func Execute(execPath string, args []string) error {
-
-	return errors.New("Shut up go")
+func Execute(argv []string) error {
+	return syscall.Exec(argv[0], argv, os.Environ())
 }

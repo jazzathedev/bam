@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -9,6 +11,11 @@ import (
 
 	"github.com/jazzathedev/bam/shim/bamexec"
 )
+
+type shimEntry struct {
+	Tool string   `json:"tool"`
+	Run  []string `json:"run"`
+}
 
 var (
 	bamDir  string
@@ -33,17 +40,58 @@ func main() {
 	}
 
 	execName := filepath.Base(execPath)
-	toolName := strings.TrimSuffix(execName, filepath.Ext(execName))
+	shimName := strings.TrimSuffix(execName, filepath.Ext(execName))
+	parentEntry, err := checkManifest(shimName)
+	if err != nil {
+		log.Fatalf("Unable to check shim manifest: %s", err)
+	}
 
-	toolVersionPath := filepath.Join(BamDir(), "versions", toolName)
-	toolVersion, err := os.ReadFile(toolVersionPath)
+	parentVersionPath := filepath.Join(BamDir(), "versions", parentEntry.Tool)
+	parentVersionBytes, err := os.ReadFile(parentVersionPath)
 	if err != nil {
 		log.Fatalf("Unable to find pinned version file: %s", err)
 	}
 
-	toolDir := filepath.Join(BamDir(), "installs", toolName, string(toolVersion))
-	// Somehow need to go from the toolDir to the various executables/scripts in it...?
+	parentVersion := string(parentVersionBytes)
+	parentVersion = strings.TrimSpace(parentVersion)
 
-	// THIS DOES NOT WORK!!! IT IS A WIP
-	err = bamexec.Execute(toolDir, os.Args)
+	installDir := filepath.Join(BamDir(), "installs", parentEntry.Tool, parentVersion)
+
+	parts := []string{}
+	for _, part := range parentEntry.Run {
+		parts = append(parts, filepath.Join(installDir, part))
+	}
+
+	argv := append(parts, os.Args[1:]...)
+
+	err = bamexec.Execute(argv)
+	if err != nil {
+		log.Fatalf("Error starting process: %s", err)
+	}
+}
+
+func checkManifest(shimName string) (shimEntry, error) {
+	manifestPath := filepath.Join(BamDir(), "shims", "manifest.json")
+
+	manifestFile, err := os.Open(manifestPath)
+
+	if err != nil {
+		return shimEntry{}, fmt.Errorf("Unable to open %s: %w", manifestPath, err)
+	}
+
+	defer manifestFile.Close()
+
+	var entries map[string]shimEntry
+	decoder := json.NewDecoder(manifestFile)
+	err = decoder.Decode(&entries)
+	if err != nil {
+		return shimEntry{}, fmt.Errorf("Invalid shim manifest %s: %w", manifestPath, err)
+	}
+
+	entry, ok := entries[shimName]
+	if !ok {
+		return shimEntry{}, fmt.Errorf("Can not find tool %s in shim manifest", shimName)
+	}
+
+	return entry, nil
 }
